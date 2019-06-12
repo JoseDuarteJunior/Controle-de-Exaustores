@@ -1,0 +1,182 @@
+#include <OneWire.h>  //biblioecas para leitura dos sensores
+#include <DallasTemperature.h>
+
+
+#include <WiFi.h>  // bibliotecas para conexão wifi
+#include <HTTPClient.h>
+#include <WiFiUdp.h>//Biblioteca do UDP.
+
+
+
+/*-----define os pinos de gpio onde os sensores serão ligados-----*/
+#define SENSOR_1_PIN 22 // For BUS 1 
+#define SENSOR_2_PIN 23 // For BUS 2
+#define LED 21 //led de status do sistema
+
+/*-----( Declara os objetos )-----*/
+OneWire  Bus1(SENSOR_1_PIN);  // Create a 1-wire object
+OneWire  Bus2(SENSOR_2_PIN);  // Create another 1-wire object
+/*-- passa a referencia dos objetos para o modulo dallas temperature--*/
+DallasTemperature sensors1(&Bus1);
+DallasTemperature sensors2(&Bus2);
+
+
+
+//parte encarregada de enviar a informação para o servidor
+
+WiFiUDP udp;//Cria um objeto da classe UDP.
+String x; // vai carregar a leitura do sensores
+const char* ssid = "GAM_RF"; // id de conexão na rede
+const char* password =  ""; //senha de rede
+
+
+
+
+void setup()  /****** SETUP: RODA UMA VEZ ******/
+{   
+
+   pinMode(LED, OUTPUT); // led confirma transmissão de pacote
+
+  
+  //inicializa serial para depurar o projeto
+   Serial.begin(9600);
+   Serial.println("Bem vindo ao Projeto Chernobyl GAM V.1.2");
+
+   delay(4000);   //Delay nescessario antes do WIFI iniciar
+   WiFi.begin(ssid, password); //inicia wifi
+
+  
+  //inicializa a biblioteca com os parametros de medida
+  sensors1.begin();
+  sensors2.begin();
+
+  //seta a resolução para 11 bits
+  sensors1.setResolution(11);
+  sensors2.setResolution(11);
+  
+  //descobre os sensores
+  discoverBusOneWireDevices();
+  // descobre o segundo sensor  
+  discoverBusTwoWireDevices();
+
+
+ while (WiFi.status() != WL_CONNECTED) { //Check for the connection
+    delay(1000);
+    Serial.println("Connecting to WiFi..");
+  }
+ 
+  Serial.println("Connected to the WiFi network");
+
+  
+}
+
+void loop()   /****** LOOP: RODA CONSTANTE ******/
+{
+ 
+ //pega a temperatura
+ sensors1.requestTemperatures();
+ //printa para depurar a temperatura lida
+ Serial.print("Temperatura Externa:");
+ Serial.print(sensors1.getTempCByIndex(0));
+//  
+  //pega o valor lido grava na varialvel a diciona a letra A que eh separador de valores
+  x = sensors1.getTempCByIndex(0);
+  x = x + "A";
+
+
+ 
+ 
+  //pega temperatura do segundo sensor
+  sensors2.requestTemperatures();
+  // depuração
+  Serial.print("Temperatura Externa:");
+  Serial.println(sensors2.getTempCByIndex(0));
+  //concatena variavel
+  x = x +(sensors2.getTempCByIndex(0));
+    
+
+      Serial.println("FINAL"+x);
+  
+ if(WiFi.status()== WL_CONNECTED){
+  udp.beginPacket("10.20.3.127", 555);//Inicializa o pacote de transmissao ao IP e PORTA.
+  udp.println(x);//Adiciona-se o valor ao pacote.
+      udp.endPacket();//Finaliza o pacote e envia.
+    Serial.println("PACOTE ENVIADO");
+    digitalWrite(LED,HIGH); // acende led indicando que enviou
+    delay(100);
+    digitalWrite(LED,LOW);//apaga LED
+ }
+  
+  
+  
+  delay(1000);
+
+
+
+ 
+}
+
+
+// rotina para mapear sensor em pinos separados ele varre duas vezes descobrindo sensores//
+void discoverBusOneWireDevices(void)
+{
+  byte i;
+  byte present = 0;
+  byte data[12];
+  byte addr[8];
+
+  
+  while(Bus1.search(addr)) {
+  
+    for( i = 0; i < 8; i++) {
+      Serial.print("0x");
+      if (addr[i] < 16) {
+        Serial.print('0');
+      }
+      Serial.print(addr[i], HEX);
+      if (i < 7) {
+        Serial.print(", ");
+      }
+    }
+    if ( OneWire::crc8( addr, 7) != addr[7]) {
+    
+      return;
+    }
+  }
+  Serial.println();
+  Serial.print("Done");
+  Bus1.reset_search();
+  return;
+}// END
+
+//segunda rotina para descobrir o segundo sensor
+void discoverBusTwoWireDevices(void)
+{
+  byte i;
+  byte present = 0;
+  byte data[12];
+  byte addr[8];
+
+ 
+  while(Bus2.search(addr)) {
+   
+    for( i = 0; i < 8; i++) {
+      Serial.print("0x");
+      if (addr[i] < 16) {
+        Serial.print('0');
+      }
+      Serial.print(addr[i], HEX);
+      if (i < 7) {
+        Serial.print(", ");
+      }
+    }
+    if ( OneWire::crc8( addr, 7) != addr[7]) {
+      Serial.print("CRC is not valid!\n\r");
+      return;
+    }
+  }
+  Serial.println();
+ 
+  Bus2.reset_search();
+  return;
+}//END
