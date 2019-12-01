@@ -156,30 +156,28 @@ Serial.println(sensorEf);
 
 //---------------------------------------------------------modo verão--------------------------------------------------------------------
 
-if (automaticoM == 1) {
-      if  (   ((sensorIf >= sensorEf) && (veraoStatus == 1) && (diferenca >= 2) )   ){
-      if  ( tempointerv != 2 &&tempointerv != 3 && tempointerv != 4 && tempointerv != 5 && tempointerv != 6 && tempointerv != 7 && tempointerv != 8 && tempointerv != 1 && dayweek != "Saturday") //original
-        {
-           ativa_reles ();
-           Serial.println("Verão Status:");
-           Serial.println(veraoStatus);
-           Serial.println("Intervalo");
-           Serial.println(tempointerv);
-         }
-       else{
-        desativa_reles();
+if (automaticoM == 1) 
+{
+      if  (   ((sensorIf >= sensorEf) && (veraoStatus == 1) && (diferenca >= 2) )   )
+      {
+          if  ( tempointerv != 2 &&tempointerv != 3 && tempointerv != 4 && tempointerv != 5 && tempointerv != 6 && tempointerv != 7 && tempointerv != 8 && tempointerv != 1 && dayweek != "Saturday") //original
+          {
+              ativa_reles ();
+              // Serial.println("Verão Status:");
+              //Serial.println(veraoStatus);
+              //Serial.println("Intervalo");
+               //Serial.println(tempointerv);
+           }
+          else
+          {
+            desativa_reles();
+          }
        }
-       
-    }
-    else {
-      desativa_reles();
-    }
-       
-       
-    
-//-------------------------------------------------------------------------------------------------------------------------------------
-
-    
+      else if ((sensorIf < (sensorEf + 1)) && veraoStatus ==1)
+      {
+          desativa_reles();
+      }
+ {   
      
 if (automaticoM != 1)
 {
@@ -262,13 +260,34 @@ void desativa_reles(){
 
 void ativa_reles() {
 
+  
     
        
            Serial.println("Ligou relé 1");
-           digitalWrite(relayPin, LOW); 
-           exaustor12Status = "ON";
+           //update testar
+           if (digitalRead(relayPin) != LOW){
+            digitalWrite(relayPin, LOW); 
+            exaustor12Status = "ON";
+           }
+           if (digitalRead(relayPin1) != LOW){
+            digitalWrite(relayPin1, LOW); 
+            exaustor34Status = "ON";
+           }
+           if (digitalRead(relayPin2) != LOW){
+            digitalWrite(relayPin2, LOW); 
+            exaustor56Status = "ON";
+           }
+           if (digitalRead(relayPin3) != LOW){
+            digitalWrite(relayPin3, LOW); 
+            exaustor78Status = "ON";
+           }
+          if (digitalRead(relayPin4) != LOW){
+            digitalWrite(relayPin4, LOW); 
+            exaustor9Status = "ON";
+           }
+           
         
-
+/*
            Serial.println("Ligou relé 2");
            digitalWrite(relayPin1, LOW); 
            exaustor34Status = "ON";
@@ -285,7 +304,7 @@ void ativa_reles() {
             digitalWrite(relayPin4, LOW); 
             exaustor9Status="ON";
             Serial.println("Todos Exaustores Ligados");
-          
+       */   
             
           
 }
